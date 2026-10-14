@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Driftwood – account-free messaging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9F0EE; --panel:#FFFFFF; --ink:#10292B; --muted:#5B7473; --line:#D3E0DC;
+  --sea:#1F6F6B; --sea-ink:#FFFFFF; --theirs:#E3ECE9; --sun:#F2A33A; --danger:#B3402A;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0B1819; --panel:#122426; --ink:#E4F0EE; --muted:#8CA9A6; --line:#23403F;
+    --sea:#3FA39C; --sea-ink:#06201F; --theirs:#1B3436; --danger:#E27A62; color-scheme:dark;}
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:340px 1fr;height:100dvh;max-width:1400px;margin:0 auto;background:var(--panel);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.side{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0;background:var(--panel)}
+.me{padding:20px 20px 14px}
+.me-label{font-size:13px;color:var(--muted)}
+.me-name{display:block;margin:2px 0 0;padding:0;border:0;background:none;text-align:left;
+  font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;letter-spacing:-.01em;word-break:break-word}
+.me-name:hover{color:var(--sea)}
+.me-status{margin-top:8px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.on{background:#35B36B}
+.dot.wait{background:var(--sun)}
+.actions{display:flex;gap:8px;padding:0 20px 14px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 14px;font-weight:600;font-size:15px}
+.btn:hover{border-color:var(--sea)}
+.btn.primary{background:var(--sea);color:var(--sea-ink);border-color:var(--sea)}
+.btn.danger{color:var(--danger)}
+.link{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:13px;padding:0}
+.invites{padding:0 20px 12px;display:grid;gap:8px}
+.invite{border:1px solid var(--sun);border-radius:12px;padding:10px 12px;font-size:14px}
+.invite b{font-weight:600}
+.invite .row{display:flex;gap:8px;margin-top:8px}
+.invite .btn{padding:6px 12px;font-size:14px}
+.list{flex:1;overflow:auto;border-top:1px solid var(--line);min-height:0}
+.item{display:flex;gap:12px;align-items:center;width:100%;padding:12px 20px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left}
+.item:hover{background:var(--bg)}
+.item.active{background:var(--theirs)}
+.av{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;font-size:16px}
+.av.grp{border-radius:12px}
+.item-main{flex:1;min-width:0}
+.item-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-prev{font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{flex:none;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--sun);color:#2b1a00;font-size:13px;font-weight:700;display:grid;place-items:center}
+.none{padding:24px 20px;color:var(--muted);font-size:15px}
+.side-foot{padding:12px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
+.empty{margin:auto;max-width:420px;padding:24px;text-align:center}
+.empty h1{font-family:var(--display);font-size:32px;line-height:1.1;margin:0 0 10px;letter-spacing:-.01em}
+.empty p{color:var(--muted);margin:0 0 16px}
+.chat{display:flex;flex-direction:column;flex:1;min-height:0}
+.head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.back{display:none;border:0;background:none;font-size:22px;padding:4px 8px}
+.head-main{flex:1;min-width:0}
+.head-name{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head .btn{padding:6px 10px;font-size:14px}
+.msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:4px}
+.msg{max-width:min(520px,82%);display:flex;flex-direction:column;align-items:flex-start}
+.msg.mine{align-self:flex-end;align-items:flex-end}
+.who{font-size:13px;font-weight:600;color:var(--sea);margin:8px 4px 2px}
+.bubble{background:var(--theirs);padding:8px 12px;border-radius:16px 16px 16px 4px;white-space:pre-wrap;overflow-wrap:anywhere}
+.mine .bubble{background:var(--sea);color:var(--sea-ink);border-radius:16px 16px 4px 16px}
+.bubble img{display:block;max-width:100%;max-height:340px;border-radius:10px;cursor:zoom-in}
+.bubble.pic{padding:4px;background:transparent}
+.meta{font-size:12px;color:var(--muted);margin:2px 4px 6px}
+.meta button{border:0;background:none;padding:0;color:var(--danger);text-decoration:underline;font-size:12px}
+.sys{align-self:center;font-size:13px;color:var(--muted);margin:10px 0}
+.composer{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line)}
+.composer textarea{flex:1;resize:none;max-height:140px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;font:inherit;background:var(--bg);color:var(--ink)}
+.icon{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center}
+.icon:hover{border-color:var(--sea)}
+.icon.send{background:var(--sea);border-color:var(--sea);color:var(--sea-ink)}
+.icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);padding:22px;width:min(420px,92vw)}
+dialog::backdrop{background:rgba(5,20,20,.55)}
+dialog h2{font-family:var(--display);margin:0 0 12px;font-size:22px}
+dialog label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+dialog input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--bg);color:var(--ink)}
+dialog .hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+dialog .row{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+#dlgImg{padding:8px;width:auto;max-width:94vw}
+#dlgImg img{display:block;max-width:90vw;max-height:84vh;border-radius:10px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:90vw;z-index:10}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .main{display:none}
+  body.in-chat .side{display:none}
+  body.in-chat .main{display:flex}
+  .back{display:inline-block}
+}
+@media (prefers-reduced-motion:no-preference){
+  .msg{animation:pop .16s ease-out}
+  @keyframes pop{from{transform:translateY(4px);opacity:.4}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <header class="me">
+      <div class="me-label">Your username (tap to copy)</div>
+      <button class="me-name" id="meBtn" type="button"></button>
+      <div class="me-status"><span class="dot" id="dot"></span><span id="status">Connecting…</span></div>
+    </header>
+    <div class="actions">
+      <button class="btn primary" id="newDm" type="button">New message</button>
+      <button class="btn" id="newGroup" type="button">New group</button>
+    </div>
+    <section class="invites" id="invites" hidden></section>
+    <nav class="list" id="list" aria-label="Chats"></nav>
+    <footer class="side-foot">
+      Your username is saved in this browser. <button class="link" id="reset" type="button">Change username</button>
+    </footer>
+  </aside>
+
+  <main class="main">
+    <div class="empty" id="empty">
+      <h1>Share your username to start chatting</h1>
+      <p>Anyone who knows it can message you or invite you to a group. No sign-up needed.</p>
+      <button class="btn primary" id="copyBig" type="button">Copy my username</button>
+    </div>
+    <section class="chat" id="chat" hidden>
+      <header class="head">
+        <button class="back" id="back" type="button" aria-label="Back to chats">←</button>
+        <div class="av" id="hAv"></div>
+        <div class="head-main">
+          <div class="head-name" id="hName"></div>
+          <div class="head-sub" id="hSub"></div>
+        </div>
+        <button class="btn" id="addPeople" type="button" hidden>Add people</button>
+        <button class="btn danger" id="leave" type="button" hidden>Leave</button>
+      </header>
+      <div class="msgs" id="msgs" aria-live="polite"></div>
+      <div class="composer">
+        <input type="file" id="file" accept="image/*" multiple hidden>
+        <button class="icon" id="attach" type="button" aria-label="Send an image from this device">
+          <svg viewBox="0 0 24 24"><path d="M21 12.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.4-8.4"/></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Write a message" aria-label="Message"></textarea>
+        <button class="icon send" id="send" type="button" aria-label="Send message">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+        </button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlgDm">
+  <h2>New message</h2>
+  <label for="dmUser">Their username</label>
+  <input id="dmUser" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="mossy-heron-482">
+  <div class="row"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" id="dmGo" type="button">Open chat</button></div>
+</dialog>
+
+<dialog id="dlgGroup">
+  <h2>New group</h2>
+  <label for="gName">Group name</label>
+  <input id="gName" maxlength="40" autocomplete="off" placeholder="Weekend plans">
+  <label for="gUsers">Invite people (optional)</label>
+  <input id="gUsers" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="usernames separated by spaces">
+  <p class="hint">They get an invite and join when they accept.</p>
+  <div class="row"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" id="gGo" type="button">Create group</button></div>
+</dialog>
+
+<dialog id="dlgAdd">
+  <h2>Add people</h2>
+  <label for="aUsers">Usernames</label>
+  <input id="aUsers" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="usernames separated by spaces">
+  <p class="hint">They need to be online to receive the invite.</p>
+  <div class="row"><button class="btn" data-close type="button">Cancel</button><button class="btn primary" id="aGo" type="button">Send invites</button></div>
+</dialog>
+
+<dialog id="dlgName">
+  <h2>Choose your username</h2>
+  <label for="nameIn">Username</label>
+  <input id="nameIn" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. mossy-heron-482">
+  <p class="hint">People use it to message you and invite you to groups. Each username can only be used by one person at a time.</p>
+  <p class="hint" id="nameErr" role="alert" style="color:var(--danger)"></p>
+  <div class="row"><button class="btn" id="nameSuggest" type="button">Suggest one</button><button class="btn primary" id="nameGo" type="button">Claim username</button></div>
+</dialog>
+
+<dialog id="dlgImg"><img id="bigImg" alt="Shared image"></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"></script>
+<script>
+if (typeof Peer === 'undefined') {
+  document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"><\/script>');
+}
+</script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const PREFIX = 'driftwood-';
+const STORE = 'driftwood.v1';
+const NAME_RE = /^[a-z0-9][a-z0-9_-]{1,18}[a-z0-9]$/;
+const ADJ = ['mossy','quiet','brisk','amber','gentle','lucky','misty','nimble','plucky','rusty','silver','sunny','tidy','velvet','wild','witty','cosmic','dusty','eager','frosty','golden','hazy','jolly','keen','lively','mellow','noble','proud','rapid','shy','swift','tame','upbeat','vivid','warm','zesty','bold','calm','crisp','daring'];
+const ANI = ['heron','otter','falcon','badger','lynx','marmot','newt','osprey','panda','quokka','raven','seal','tiger','urchin','vole','walrus','yak','zebra','gecko','ibis','koala','lemur','moose','narwhal','ocelot','puffin','robin','stoat','toucan','wombat','alpaca','bison','crane','dingo','egret','finch','gopher','hare','iguana','jackal'];
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const genName = () => `${rnd(ADJ)}-${rnd(ANI)}-${100 + Math.floor(Math.random() * 900)}`;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
+/* ---------- state ---------- */
+function load() { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } }
+let state = load() || { me: null, chats: {}, invites: [], active: null };
+for (const c of Object.values(state.chats)) for (const m of c.msgs) if (m.status === 'sending') { m.status = 'failed'; m.failed = c.type === 'dm' ? [c.id] : (c.members || []).filter(u => u !== state.me); }
+
+function stripOldestImage() {
+  let best = null;
+  for (const c of Object.values(state.chats)) for (const m of c.msgs) if (m.img && (!best || m.ts < best.ts)) best = m;
+  if (!best) return false;
+  delete best.img; best.imgGone = true; return true;
+}
+function save() {
+  for (let i = 0; i < 40; i++) {
+    try { localStorage.setItem(STORE, JSON.stringify(state)); return; }
+    catch { if (!stripOldestImage()) { toast('This browser has no space left to save history.'); return; } }
+  }
+}
+save();
+
+/* ---------- helpers ---------- */
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+let toastTimer;
+function toast(t) {
+  document.querySelectorAll('.toast').forEach(n => n.remove());
+  const n = el('div', 'toast', t); n.setAttribute('role', 'status'); document.body.appendChild(n);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => n.remove(), 3500);
+}
+function normUser(s) { return String(s || '').trim().toLowerCase().replace(/^@/, ''); }
+function parseUsers(s) { return [...new Set(String(s).split(/[\s,]+/).map(normUser).filter(Boolean))]; }
+function hue(s) { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
+function avatar(name, grp) {
+  const a = el('div', 'av' + (grp ? ' grp' : ''), (name[0] || '?').toUpperCase());
+  a.style.background = `hsl(${hue(name)} 42% 36%)`; return a;
+}
+const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+/* ---------- networking (WebRTC via PeerJS) ---------- */
+let peer, tries = 0;
+const conns = {}, pending = {}, failers = {};
+
+function setStatus(text, kind) { $('#status').textContent = text; $('#dot').className = 'dot ' + (kind || ''); }
+
+function wirePeer() {
+  peer.on('open', () => { tries = 0; setStatus('Online', 'on'); });
+  peer.on('connection', setupConn);
+  peer.on('disconnected', () => { setStatus('Offline, reconnecting…', 'wait'); setTimeout(() => { if (peer && !peer.destroyed) peer.reconnect(); }, 2000); });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') {
+      peer.destroy();
+      if (++tries < 6) { setTimeout(start, 3000); }
+      else setStatus('Your username is in use right now (another tab or another person). Close other tabs and reload.', 'wait');
+      return;
+    }
+    if (e.type === 'peer-unavailable') {
+      const m = /driftwood-[a-z0-9_-]+/.exec(e.message || '');
+      const u = m && m[0].slice(PREFIX.length);
+      if (u && failers[u]) failers[u]();
+      return;
+    }
+    if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(e.type)) setStatus('Offline, reconnecting…', 'wait');
+  });
+}
+function start() {
+  if (!state.me) return;
+  setStatus('Connecting…', 'wait');
+  if (typeof Peer === 'undefined') { setStatus('Could not load the chat library. Check your connection and reload.', 'wait'); return; }
+  try { peer = new Peer(PREFIX + state.me); }
+  catch (err) { setStatus('Could not start: ' + (err && err.message || err), 'wait'); return; }
+  wirePeer();
+}
+
+/* ---------- choosing a username (claimed by registering it on the network) ---------- */
+function claim(name) {
+  return new Promise((resolve, reject) => {
+    if (typeof Peer === 'undefined') return reject(new Error('lib'));
+    let p, t, done = false;
+    const finish = (fn, v) => { if (done) return; done = true; clearTimeout(t); fn(v); };
+    try { p = new Peer(PREFIX + name); } catch { return reject(new Error('lib')); }
+    t = setTimeout(() => { p.destroy(); finish(reject, new Error('timeout')); }, 12000);
+    p.on('open', () => finish(resolve, p));
+    p.on('error', e => { p.destroy(); finish(reject, new Error(e.type === 'unavailable-id' ? 'taken' : 'network')); });
+  });
+}
+function promptName() {
+  const dlg = $('#dlgName'), inp = $('#nameIn'), err = $('#nameErr'), go = $('#nameGo');
+  setStatus('Choose a username to go online', 'wait');
+  inp.value = ''; err.textContent = ''; dlg.showModal(); inp.focus();
+  const submit = async () => {
+    const name = normUser(inp.value);
+    if (!NAME_RE.test(name)) { err.textContent = 'Use 3 to 20 characters: lowercase letters, numbers, - and _ (not at the start or end).'; return; }
+    go.disabled = true; err.textContent = 'Checking if it is free…';
+    try {
+      const p = await claim(name);
+      state.me = name; save(); peer = p; wirePeer();
+      setStatus('Online', 'on'); dlg.close(); render(); toast(`You are ${name}`);
+    } catch (e) {
+      err.textContent = e.message === 'taken' ? `"${name}" is already taken. Try another one.`
+        : e.message === 'lib' ? 'Could not load the chat library. Check your connection and reload.'
+        : "Couldn't reach the chat server to check. Check your connection and try again.";
+    } finally { go.disabled = false; }
+  };
+  go.onclick = submit;
+  inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
+  $('#nameSuggest').onclick = () => { inp.value = genName(); err.textContent = ''; inp.focus(); };
+  dlg.addEventListener('cancel', e => e.preventDefault());
+}
+window.addEventListener('online', () => { if (peer && peer.disconnected && !peer.destroyed) peer.reconnect(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (peer && peer.disconnected && !peer.destroyed) peer.reconnect();
+    const c = state.chats[state.active]; if (c && c.unread) { c.unread = 0; save(); render(); }
+  }
+});
+
+function setupConn(conn) {
+  const user = conn.peer.slice(PREFIX.length);
+  if (!NAME_RE.test(user)) { conn.close(); return; }
+  conns[user] = conn;
+  conn.on('data', d => { try { onData(user, d); } catch (err) { console.error(err); } });
+  conn.on('close', () => { if (conns[user] === conn) delete conns[user]; });
+  conn.on('error', () => { if (conns[user] === conn) delete conns[user]; });
+}
+function getConn(user) {
+  const c = conns[user];
+  if (c && c.open) return Promise.resolve(c);
+  if (pending[user]) return pending[user];
+  pending[user] = new Promise((res, rej) => {
+    if (!peer || !peer.open) return rej(new Error('offline'));
+    const conn = peer.connect(PREFIX + user, { reliable: true });
+    const t = setTimeout(() => { conn.close(); rej(new Error('timeout')); }, 8000);
+    setupConn(conn);
+    conn.on('open', () => { clearTimeout(t); res(conn); });
+    conn.on('error', () => { clearTimeout(t); rej(new Error('error')); });
+    failers[user] = () => { clearTimeout(t); delete conns[user]; rej(new Error('unreachable')); };
+  }).finally(() => { delete pending[user]; delete failers[user]; });
+  return pending[user];
+}
+const send = (user, payload) => getConn(user).then(c => c.send(payload));
+
+/* ---------- receiving ---------- */
+const okText = t => typeof t === 'string' && t.length > 0 && t.length <= 4000;
+const okImg = i => typeof i === 'string' && i.startsWith('data:image/') && i.length < 8e6;
+const okId = i => typeof i === 'string' && i.length > 0 && i.length <= 40;
+
+function ensureDm(user) {
+  const key = 'dm:' + user;
+  if (!state.chats[key]) state.chats[key] = { key, type: 'dm', id: user, name: user, msgs: [], unread: 0, last: Date.now() };
+  return state.chats[key];
+}
+function addMsg(chat, m, mine) {
+  if (chat.msgs.some(x => x.id === m.id)) return false;
+  chat.msgs.push(m); chat.last = m.ts;
+  if (chat.msgs.length > 300) chat.msgs.splice(0, chat.msgs.length - 300);
+  if (!mine && !(state.active === chat.key && document.visibilityState === 'visible')) chat.unread = (chat.unread || 0) + 1;
+  save(); render(); return true;
+}
+function sysMsg(chat, text) { addMsg(chat, { id: uid(), sys: true, text, ts: Date.now() }, true); }
+
+function onData(from, d) {
+  if (!d || typeof d !== 'object' || from === state.me) return;
+  const content = () => {
+    if (!okId(d.id)) return null;
+    const m = { id: d.id, from, ts: Date.now() };
+    if (okText(d.text)) m.text = d.text;
+    if (okImg(d.img)) m.img = d.img;
+    return (m.text || m.img) ? m : null;
+  };
+  if (d.t === 'dm') {
+    const m = content(); if (!m) return;
+    addMsg(ensureDm(from), m, false);
+    send(from, { t: 'ack', id: m.id }).catch(() => {});
+  } else if (d.t === 'gm') {
+    const chat = state.chats['g:' + d.gid];
+    if (!chat || !chat.members.includes(from)) return;
+    const m = content(); if (m) addMsg(chat, m, false);
+  } else if (d.t === 'ack') {
+    const chat = state.chats['dm:' + from];
+    const m = chat && chat.msgs.find(x => x.id === d.id && x.from === state.me);
+    if (m) { m.status = 'delivered'; save(); render(); }
+  } else if (d.t === 'invite') {
+    if (!okId(d.gid) || typeof d.name !== 'string' || !Array.isArray(d.members)) return;
+    if (state.chats['g:' + d.gid] || state.invites.some(i => i.gid === d.gid)) return;
+    state.invites.push({ gid: d.gid, name: d.name.slice(0, 40), members: d.members.filter(u => NAME_RE.test(u)).slice(0, 100), from });
+    save(); render();
+  } else if (d.t === 'joined') {
+    const chat = state.chats['g:' + d.gid];
+    if (!chat || !chat.members.includes(state.me)) return;
+    if (!chat.members.includes(from)) {
+      chat.members.push(from); save();
+      sysMsg(chat, `${from} joined`);
+      send(from, { t: 'members', gid: chat.id, members: chat.members }).catch(() => {});
+    }
+  } else if (d.t === 'members') {
+    const chat = state.chats['g:' + d.gid];
+    if (!chat || !chat.members.includes(from) || !Array.isArray(d.members)) return;
+    for (const u of d.members) if (NAME_RE.test(u) && !chat.members.includes(u)) {
+      chat.members.push(u); save();
+      send(u, { t: 'joined', gid: chat.id }).catch(() => {});
+    }
+    render();
+  } else if (d.t === 'left') {
+    const chat = state.chats['g:' + d.gid];
+    if (!chat || !chat.members.includes(from)) return;
+    chat.members = chat.members.filter(u => u !== from);
+    sysMsg(chat, `${from} left`);
+  }
+}
+
+/* ---------- sending ---------- */
+async function transmit(chat, m, targets) {
+  const base = { id: m.id, text: m.text, img: m.img };
+  const payload = chat.type === 'dm' ? { t: 'dm', ...base } : { t: 'gm', gid: chat.id, ...base };
+  m.status = 'sending'; m.failed = []; render();
+  const res = await Promise.allSettled(targets.map(u => send(u, payload)));
+  m.failed = targets.filter((u, i) => res[i].status === 'rejected');
+  m.status = m.failed.length ? 'failed' : 'sent';
+  save(); render();
+}
+function deliver(content) {
+  const chat = state.chats[state.active]; if (!chat) return;
+  const m = { id: uid(), from: state.me, ts: Date.now(), ...content };
+  addMsg(chat, m, true);
+  return transmit(chat, m, chat.type === 'dm' ? [chat.id] : chat.members.filter(u => u !== state.me));
+}
+function sendText() {
+  const input = $('#input'); const t = input.value.trim();
+  if (!t) return;
+  input.value = ''; autosize(); deliver({ text: t });
+}
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      const max = 1280, s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+async function sendFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) { toast(`${f.name} is not an image.`); continue; }
+    if (f.size > 25e6) { toast(`${f.name} is larger than 25 MB.`); continue; }
+    try { await deliver({ img: await fileToDataUrl(f) }); } catch { toast(`Couldn't read ${f.name}.`); }
+  }
+}
+
+/* ---------- chat actions ---------- */
+function openChat(key) {
+  state.active = key; const c = state.chats[key]; if (c) c.unread = 0;
+  save(); render(); scrollDown(true);
+  if (window.matchMedia('(min-width:761px)').matches) $('#input').focus();
+}
+function openDm(user) {
+  user = normUser(user);
+  if (!NAME_RE.test(user)) return toast('That is not a valid username.');
+  if (user === state.me) return toast("That's your own username.");
+  ensureDm(user); openChat('dm:' + user);
+}
+async function inviteUsers(chat, users) {
+  const todo = users.filter(u => u !== state.me && !chat.members.includes(u));
+  const bad = todo.filter(u => !NAME_RE.test(u));
+  if (bad.length) toast(`Not a valid username: ${bad[0]}`);
+  for (const u of todo.filter(u => NAME_RE.test(u))) {
+    try {
+      await send(u, { t: 'invite', gid: chat.id, name: chat.name, members: chat.members });
+      sysMsg(chat, `Invited ${u}`);
+    } catch { sysMsg(chat, `Couldn't reach ${u}. They need to be online to get the invite.`); }
+  }
+}
+function createGroup(name, users) {
+  name = name.trim(); if (!name) return toast('Give the group a name.');
+  const id = uid(); const key = 'g:' + id;
+  state.chats[key] = { key, type: 'group', id, name, members: [state.me], msgs: [], unread: 0, last: Date.now() };
+  openChat(key);
+  if (users.length) inviteUsers(state.chats[key], users);
+}
+function acceptInvite(gid) {
+  const inv = state.invites.find(i => i.gid === gid); if (!inv) return;
+  state.invites = state.invites.filter(i => i.gid !== gid);
+  const members = [...new Set([...inv.members, inv.from, state.me])];
+  const key = 'g:' + gid;
+  state.chats[key] = { key, type: 'group', id: gid, name: inv.name, members, msgs: [], unread: 0, last: Date.now() };
+  for (const u of members.filter(u => u !== state.me)) send(u, { t: 'joined', gid }).catch(() => {});
+  openChat(key);
+}
+function declineInvite(gid) { state.invites = state.invites.filter(i => i.gid !== gid); save(); render(); }
+function leaveGroup() {
+  const chat = state.chats[state.active]; if (!chat || chat.type !== 'group') return;
+  if (!confirm(`Leave "${chat.name}"? You'll need a new invite to rejoin.`)) return;
+  for (const u of chat.members.filter(u => u !== state.me)) send(u, { t: 'left', gid: chat.id }).catch(() => {});
+  delete state.chats[chat.key]; state.active = null; save(); render();
+}
+
+/* ---------- rendering ---------- */
+function preview(c) {
+  const m = [...c.msgs].reverse().find(x => !x.sys); if (!m) return c.type === 'group' ? 'No messages yet' : 'Say hello';
+  return (m.from === state.me ? 'You: ' : '') + (m.img || m.imgGone ? 'Photo' : m.text);
+}
+function renderList() {
+  const list = $('#list'); list.textContent = '';
+  const chats = Object.values(state.chats).sort((a, b) => b.last - a.last);
+  if (!chats.length) { list.appendChild(el('div', 'none', "No chats yet. Tap New message and enter a friend's username.")); return; }
+  for (const c of chats) {
+    const b = el('button', 'item' + (c.key === state.active ? ' active' : '')); b.type = 'button';
+    b.appendChild(avatar(c.name, c.type === 'group'));
+    const mid = el('div', 'item-main'); mid.appendChild(el('div', 'item-name', c.name)); mid.appendChild(el('div', 'item-prev', preview(c)));
+    b.appendChild(mid);
+    if (c.unread) b.appendChild(el('span', 'badge', c.unread > 99 ? '99+' : String(c.unread)));
+    b.onclick = () => openChat(c.key);
+    list.appendChild(b);
+  }
+}
+function renderInvites() {
+  const box = $('#invites'); box.textContent = ''; box.hidden = !state.invites.length;
+  for (const i of state.invites) {
+    const d = el('div', 'invite');
+    const p = el('div'); const b1 = el('b', null, i.from); p.append(b1, ' invited you to ', el('b', null, i.name)); d.appendChild(p);
+    const row = el('div', 'row');
+    const j = el('button', 'btn primary', 'Join'); j.type = 'button'; j.onclick = () => acceptInvite(i.gid);
+    const x = el('button', 'btn', 'Decline'); x.type = 'button'; x.onclick = () => declineInvite(i.gid);
+    row.append(j, x); d.appendChild(row); box.appendChild(d);
+  }
+}
+function statusLine(c, m) {
+  const meta = el('div', 'meta'); meta.append(fmtTime(m.ts) + ' · ');
+  if (m.status === 'failed') {
+    const who = c.type === 'group' && m.failed && m.failed.length ? ` to ${m.failed.join(', ')}` : '';
+    const b = el('button', null, `Not delivered${who}. Tap to retry`); b.type = 'button';
+    b.onclick = () => transmit(c, m, m.failed && m.failed.length ? m.failed : (c.type === 'dm' ? [c.id] : c.members.filter(u => u !== state.me)));
+    meta.appendChild(b);
+  } else meta.append({ sending: 'Sending…', sent: 'Sent', delivered: 'Delivered' }[m.status] || 'Sent');
+  return meta;
+}
+function renderChat() {
+  const c = state.chats[state.active];
+  $('#empty').hidden = !!c; $('#chat').hidden = !c;
+  document.body.classList.toggle('in-chat', !!c);
+  if (!c) return;
+  const av = avatar(c.name, c.type === 'group'); $('#hAv').className = av.className; $('#hAv').textContent = av.textContent; $('#hAv').style.background = av.style.background;
+  $('#hName').textContent = c.name;
+  $('#hSub').textContent = c.type === 'group' ? c.members.join(', ') : 'Private message';
+  $('#addPeople').hidden = $('#leave').hidden = c.type !== 'group';
+  const box = $('#msgs'); const near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  box.textContent = ''; let prev = null;
+  for (const m of c.msgs) {
+    if (m.sys) { box.appendChild(el('div', 'sys', m.text)); prev = null; continue; }
+    const mine = m.from === state.me;
+    const w = el('div', 'msg' + (mine ? ' mine' : ''));
+    if (c.type === 'group' && !mine && prev !== m.from) w.appendChild(el('div', 'who', m.from));
+    if (m.img) {
+      const b = el('div', 'bubble pic'); const im = new Image(); im.src = m.img; im.alt = 'Shared image'; im.loading = 'lazy';
+      im.onclick = () => { $('#bigImg').src = m.img; $('#dlgImg').showModal(); }; b.appendChild(im); w.appendChild(b);
+    } else if (m.imgGone) w.appendChild(el('div', 'bubble', 'Image removed to save space'));
+    if (m.text) w.appendChild(el('div', 'bubble', m.text));
+    if (mine) w.appendChild(statusLine(c, m)); else w.appendChild(el('div', 'meta', fmtTime(m.ts)));
+    box.appendChild(w); prev = m.from;
+  }
+  if (near) scrollDown();
+}
+function scrollDown(force) { const b = $('#msgs'); requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }); }
+function render() {
+  $('#meBtn').textContent = state.me || '…';
+  renderInvites(); renderList(); renderChat();
+  const n = Object.values(state.chats).reduce((a, c) => a + (c.unread || 0), 0);
+  document.title = (n ? `(${n}) ` : '') + 'Driftwood – account-free messaging';
+}
+
+/* ---------- UI wiring ---------- */
+function copyName() {
+  if (!state.me) return;
+  const done = () => toast('Username copied');
+  if (navigator.clipboard) navigator.clipboard.writeText(state.me).then(done, () => toast(state.me));
+  else toast(state.me);
+}
+$('#meBtn').onclick = copyName; $('#copyBig').onclick = copyName;
+document.querySelectorAll('dialog [data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+$('#dlgImg').addEventListener('click', () => $('#dlgImg').close());
+
+$('#newDm').onclick = () => { $('#dmUser').value = ''; $('#dlgDm').showModal(); $('#dmUser').focus(); };
+$('#dmGo').onclick = () => { const u = $('#dmUser').value; $('#dlgDm').close(); openDm(u); };
+$('#dmUser').addEventListener('keydown', e => { if (e.key === 'Enter') $('#dmGo').click(); });
+
+$('#newGroup').onclick = () => { $('#gName').value = ''; $('#gUsers').value = ''; $('#dlgGroup').showModal(); $('#gName').focus(); };
+$('#gGo').onclick = () => { const n = $('#gName').value, u = parseUsers($('#gUsers').value); if (!n.trim()) return toast('Give the group a name.'); $('#dlgGroup').close(); createGroup(n, u); };
+
+$('#addPeople').onclick = () => { $('#aUsers').value = ''; $('#dlgAdd').showModal(); $('#aUsers').focus(); };
+$('#aGo').onclick = () => { const u = parseUsers($('#aUsers').value); $('#dlgAdd').close(); const c = state.chats[state.active]; if (c && u.length) inviteUsers(c, u); };
+$('#aUsers').addEventListener('keydown', e => { if (e.key === 'Enter') $('#aGo').click(); });
+$('#leave').onclick = leaveGroup;
+$('#back').onclick = () => { state.active = null; save(); render(); };
+
+$('#send').onclick = sendText;
+$('#attach').onclick = () => $('#file').click();
+$('#file').onchange = e => { const f = [...e.target.files]; e.target.value = ''; sendFiles(f); };
+const input = $('#input');
+function autosize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; }
+input.addEventListener('input', autosize);
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendText(); } });
+
+$('#reset').onclick = () => {
+  if (!confirm('Change your username? Your chats and groups will be erased from this browser and you will pick a new name.')) return;
+  try { localStorage.removeItem(STORE); } catch {}
+  location.reload();
+};
+
+window.addEventListener('error', e => { if (e.message && e.message !== 'Script error.') setStatus('Error: ' + e.message, 'wait'); });
+window.addEventListener('unhandledrejection', e => console.warn('Unhandled:', e.reason));
+render();
+if (state.me) start(); else promptName();
+})();
+</script>
+</body>
+</html>
